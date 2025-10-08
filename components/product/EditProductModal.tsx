@@ -22,6 +22,7 @@ export default function EditProductModal({
   onAddCategory
 }: EditProductModalProps) {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [flavorInput, setFlavorInput] = useState('');
 
   // Update editing product when product prop changes
   useState(() => {
@@ -126,6 +127,65 @@ export default function EditProductModal({
                 onChange={(e) => setEditingProduct({...editingProduct, stock: parseInt(e.target.value) || 0})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Flavors</label>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={flavorInput}
+                  onChange={(e) => setFlavorInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (flavorInput.trim()) {
+                        const currentTags = editingProduct.tags || [];
+                        setEditingProduct({...editingProduct, tags: [...currentTags, flavorInput.trim()]});
+                        setFlavorInput('');
+                      }
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="e.g., Strawberry (press Enter to add)"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (flavorInput.trim()) {
+                      const currentTags = editingProduct.tags || [];
+                      setEditingProduct({...editingProduct, tags: [...currentTags, flavorInput.trim()]});
+                      setFlavorInput('');
+                    }
+                  }}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(editingProduct.tags || []).map((flavor, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm"
+                  >
+                    {flavor}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newTags = [...(editingProduct.tags || [])];
+                        newTags.splice(index, 1);
+                        setEditingProduct({...editingProduct, tags: newTags});
+                      }}
+                      className="hover:text-orange-900"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 

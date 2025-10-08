@@ -32,6 +32,7 @@ export default function AddProductModal({
     sales: 0,
     favorites: 0,
   });
+  const [flavorInput, setFlavorInput] = useState('');
 
   const handleSave = () => {
     if (newProduct.name && newProduct.description && newProduct.price && newProduct.category) {
@@ -148,6 +149,65 @@ export default function AddProductModal({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="0"
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Flavors</label>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={flavorInput}
+                  onChange={(e) => setFlavorInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (flavorInput.trim()) {
+                        const currentTags = newProduct.tags || [];
+                        setNewProduct({...newProduct, tags: [...currentTags, flavorInput.trim()]});
+                        setFlavorInput('');
+                      }
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="e.g., Strawberry (press Enter to add)"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (flavorInput.trim()) {
+                      const currentTags = newProduct.tags || [];
+                      setNewProduct({...newProduct, tags: [...currentTags, flavorInput.trim()]});
+                      setFlavorInput('');
+                    }
+                  }}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(newProduct.tags || []).map((flavor, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm"
+                  >
+                    {flavor}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newTags = [...(newProduct.tags || [])];
+                        newTags.splice(index, 1);
+                        setNewProduct({...newProduct, tags: newTags});
+                      }}
+                      className="hover:text-orange-900"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
