@@ -7,6 +7,7 @@ import * as React from 'react';
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast';
 // Or, if you want to use the '@' alias, make sure your tsconfig.json includes:
 // "paths": { "@/*": ["./*"] }
+// update code 
 
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1000000;
