@@ -91,7 +91,8 @@ export default function OrderDetailPage() {
       const response = await api.get(`/orders/${orderId}`);
       
       if (response.success && response.data) {
-        setOrder(response.data);
+        // Backend returns data: { order: {...} }
+        setOrder(response.data.order || response.data);
       }
     } catch (error: any) {
       console.error('Error fetching order details:', error);
@@ -123,6 +124,7 @@ export default function OrderDetailPage() {
   };
 
   const getStatusColor = (status: string) => {
+    if (!status) return 'bg-gray-100 text-gray-800 border-gray-300';
     switch (status.toUpperCase()) {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'CONFIRMED': return 'bg-blue-100 text-blue-800 border-blue-300';
@@ -135,6 +137,7 @@ export default function OrderDetailPage() {
   };
 
   const getPaymentStatusColor = (status: string) => {
+    if (!status) return 'bg-gray-100 text-gray-800 border-gray-300';
     switch (status.toUpperCase()) {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'COMPLETED': return 'bg-green-100 text-green-800 border-green-300';
@@ -216,35 +219,41 @@ export default function OrderDetailPage() {
             </div>
             <div className="px-6 py-4">
               <div className="space-y-4">
-                {order.orderItems.map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
-                      {item.product?.image ? (
-                        <Image
-                          src={item.product.image}
-                          alt={item.productName || item.product?.name || 'Product'}
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-6 h-6 text-gray-400" />
-                        </div>
-                      )}
+                {order.orderItems && order.orderItems.length > 0 ? (
+                  order.orderItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                        {item.product?.image ? (
+                          <Image
+                            src={item.product.image}
+                            alt={item.productName || item.product?.name || 'Product'}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">
+                          {item.productName || item.product?.name || 'Product'}
+                        </h3>
+                        <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">{formatCurrency(item.total)}</p>
+                        <p className="text-sm text-gray-500">{formatCurrency(item.price)} each</p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">
-                        {item.productName || item.product?.name || 'Product'}
-                      </h3>
-                      <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">{formatCurrency(item.total)}</p>
-                      <p className="text-sm text-gray-500">{formatCurrency(item.price)} each</p>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    No items found in this order
                   </div>
-                ))}
+                )}
               </div>
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="flex justify-between text-base font-medium text-gray-900">
