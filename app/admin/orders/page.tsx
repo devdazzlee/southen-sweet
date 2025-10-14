@@ -35,7 +35,8 @@ interface Order {
   trackingNumber?: string | null;
   trackingUrl?: string | null;
   shippingCarrier?: string | null;
-  shippingCost?: number | null;
+  shippingService?: string | null;
+  shippingCost?: number | string | null;
   shippingError?: string | null;
 }
 
@@ -258,19 +259,23 @@ export default function OrderManagement() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    {order.shippingStatus ? (
+                    {order.trackingNumber || order.shippingCarrier ? (
                       <div className="space-y-1.5">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getShippingStatusColor(order.shippingStatus)}`}>
-                          {getShippingStatusLabel(order.shippingStatus)}
-                        </span>
+                        {order.shippingCarrier && (
+                          <div className="flex items-center space-x-2">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              ✓ Label Created
+                            </span>
+                          </div>
+                        )}
                         {order.shippingCarrier && (
                           <div className="text-xs text-gray-600 font-medium">
-                            📦 {order.shippingCarrier}
+                            📦 {order.shippingCarrier} {order.shippingService && `• ${order.shippingService}`}
                           </div>
                         )}
                         {order.trackingNumber && (
-                          <div className="text-xs font-mono text-gray-700">
-                            {order.trackingNumber.slice(0, 14)}...
+                          <div className="text-xs font-mono text-gray-700 bg-gray-50 px-2 py-1 rounded">
+                            {order.trackingNumber}
                           </div>
                         )}
                         {order.trackingUrl && (
@@ -278,21 +283,23 @@ export default function OrderManagement() {
                             href={order.trackingUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
+                            className="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors shadow-sm"
                           >
-                            Track on Shippo <ExternalLink className="w-3 h-3 ml-1" />
+                            Track Package <ExternalLink className="w-3 h-3 ml-1" />
                           </a>
                         )}
-                        {order.shippingError && (
-                          <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded border border-red-200">
-                            ⚠️ {order.shippingError}
+                        {order.shippingCost && (
+                          <div className="text-xs text-gray-500">
+                            Shipping: ${Number(order.shippingCost).toFixed(2)}
                           </div>
                         )}
                       </div>
                     ) : (
                       <div className="space-y-0.5">
-                        <span className="text-xs text-gray-400">Not shipped yet</span>
-                        <div className="text-xs text-gray-500 italic">Shippo will create label</div>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          ⏳ Creating Label...
+                        </span>
+                        <div className="text-xs text-gray-500 italic">Shippo processing</div>
                       </div>
                     )}
                   </td>
