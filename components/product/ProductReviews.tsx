@@ -1,70 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Star, StarHalf, MessageCircle, ThumbsUp } from 'lucide-react';
 import Button from '@/components/custom/Button';
+import { api } from '@/lib/axios';
+import { useToast } from '@/hooks/use-toast';
 
 interface Review {
-  id: number;
-  userName: string;
+  id: string;
+  userName?: string;
   rating: number;
-  date: string;
+  title?: string;
   comment: string;
-  helpful: number;
-  verified: boolean;
+  createdAt: string;
+  isVerified: boolean;
+  guestName?: string;
+  user?: {
+    firstName: string;
+    lastName: string;
+  };
 }
 
 interface ProductReviewsProps {
-  productId: number;
+  productId: string;
   productName: string;
+  reviews?: Review[];
 }
 
-const ProductReviews = ({ productId, productName }: ProductReviewsProps) => {
+const ProductReviews = ({ productId, productName, reviews: initialReviews }: ProductReviewsProps) => {
+  const { toast } = useToast();
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
-  const [userName, setUserName] = useState('');
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [reviews, setReviews] = useState<Review[]>(initialReviews || []);
+  const [loading, setLoading] = useState(!initialReviews);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Mock reviews data - in a real app, this would come from an API
-  const [reviews] = useState<Review[]>([
-    {
-      id: 1,
-      userName: "Sarah M.",
-      rating: 5,
-      date: "2024-01-15",
-      comment: "Absolutely love these licorice ropes! The sour cherry flavor is perfectly balanced and the texture is just right. My whole family enjoys them.",
-      helpful: 12,
-      verified: true
-    },
-    {
-      id: 2,
-      userName: "Mike R.",
-      rating: 4,
-      date: "2024-01-10",
-      comment: "Great quality product. The cotton candy flavor tastes exactly like the real thing. Would definitely order again!",
-      helpful: 8,
-      verified: true
-    },
-    {
-      id: 3,
-      userName: "Emma T.",
-      rating: 5,
-      date: "2024-01-08",
-      comment: "These are amazing! The sour apple ropes have that perfect tangy kick. Great for satisfying sweet cravings.",
-      helpful: 15,
-      verified: false
-    },
-    {
-      id: 4,
-      userName: "David C.",
-      rating: 4,
-      date: "2024-01-05",
-      comment: "Good product overall. The blue raspberry flavor is nice, though I wish it was a bit more sour. Still recommend!",
-      helpful: 6,
-      verified: true
+  // Fetch reviews from API if not provided
+  useEffect(() => {
+    if (!initialReviews) {
+      fetchReviews();
     }
-  ]);
+  }, [productId, initialReviews]);
+
+  const fetchReviews = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/reviews/product/${productId}`);
+      if (response.success && response.data && response.data.reviews) {
+        setReviews(response.data.reviews);
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderStars = (rating: number, interactive = false, size = 'w-4 h-4') => {
     const stars = [];
@@ -108,30 +102,62 @@ const ProductReviews = ({ productId, productName }: ProductReviewsProps) => {
     return stars;
   };
 
-  const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
-  const totalReviews = reviews.length;
+  // Ensure reviews is always an array
+  const reviewsArray = Array.isArray(reviews) ? reviews : [];
+  
+  const averageRating = reviewsArray.length > 0 
+    ? reviewsArray.reduce((sum, review) => sum + review.rating, 0) / reviewsArray.length 
+    : 0;
+  const totalReviews = reviewsArray.length;
 
-  const handleSubmitReview = (e: React.FormEvent) => {
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userRating === 0 || !reviewText.trim() || !userName.trim()) {
-      alert('Please fill in all fields and select a rating');
+    if (userRating === 0 || !reviewText.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide a rating and review text",
+        variant: "destructive",
+      });
       return;
     }
 
-    // In a real app, this would submit to an API
-    console.log('Review submitted:', {
-      productId,
-      userName,
-      rating: userRating,
-      comment: reviewText
-    });
+    try {
+      setSubmitting(true);
 
-    // Reset form
-    setUserRating(0);
-    setReviewText('');
-    setUserName('');
-    setShowReviewForm(false);
-    alert('Thank you for your review!');
+      const response = await api.post('/reviews', {
+        productId,
+        rating: userRating,
+        title: reviewTitle,
+        comment: reviewText,
+        guestName: guestName || 'Anonymous',
+      });
+
+      if (response.success) {
+        // Reset form
+        setUserRating(0);
+        setReviewText('');
+        setReviewTitle('');
+        setGuestName('');
+        setShowReviewForm(false);
+        
+        // Refresh reviews
+        await fetchReviews();
+        
+        toast({
+          title: "Review Submitted!",
+          description: "Thank you for your review! It has been posted successfully.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error submitting review:', error);
+      toast({
+        title: "Submission Failed",
+        description: error.message || "Failed to submit review. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -161,7 +187,7 @@ const ProductReviews = ({ productId, productName }: ProductReviewsProps) => {
           <div className="flex-1">
             <div className="space-y-2">
               {[5, 4, 3, 2, 1].map((rating) => {
-                const count = reviews.filter(r => Math.floor(r.rating) === rating).length;
+                const count = reviewsArray.filter(r => Math.floor(r.rating) === rating).length;
                 const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
                 return (
                   <div key={rating} className="flex items-center space-x-3">
@@ -186,21 +212,32 @@ const ProductReviews = ({ productId, productName }: ProductReviewsProps) => {
       {showReviewForm && (
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">Write Your Review</h4>
+          
           <form onSubmit={handleSubmitReview} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Your Name (Optional)</label>
               <input
                 type="text"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="Enter your name"
-                required
+                placeholder="Enter your name or leave blank for 'Anonymous'"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Review Title (Optional)</label>
+              <input
+                type="text"
+                value={reviewTitle}
+                onChange={(e) => setReviewTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                placeholder="Summarize your review"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Rating *</label>
               <div className="flex items-center space-x-1">
                 {renderStars(hoverRating || userRating, true, 'w-6 h-6')}
                 <span className="ml-2 text-sm text-gray-600">
@@ -210,7 +247,7 @@ const ProductReviews = ({ productId, productName }: ProductReviewsProps) => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Your Review</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Your Review *</label>
               <textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
@@ -224,9 +261,10 @@ const ProductReviews = ({ productId, productName }: ProductReviewsProps) => {
             <div className="flex space-x-3">
               <Button
                 type="submit"
-                className="bg-orange-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-orange-700 transition-colors"
+                disabled={submitting}
+                className="bg-orange-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Submit Review
+                {submitting ? 'Submitting...' : 'Submit Review'}
               </Button>
               <Button
                 type="button"
@@ -241,37 +279,53 @@ const ProductReviews = ({ productId, productName }: ProductReviewsProps) => {
       )}
 
       {/* Reviews List */}
-      <div className="space-y-6">
-        {reviews.map((review) => (
-          <div key={review.id} className="border border-gray-200 rounded-lg p-6">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-1">
-                  {renderStars(review.rating, false, 'w-4 h-4')}
-                </div>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-medium text-gray-900">{review.userName}</span>
-                    {review.verified && (
-                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                        Verified Purchase
-                      </span>
-                    )}
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading reviews...</p>
+        </div>
+      ) : reviewsArray.length === 0 ? (
+        <div className="text-center py-8 text-gray-600 border border-gray-200 rounded-lg p-8">
+          <MessageCircle className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <p className="text-lg font-semibold mb-2">No reviews yet</p>
+          <p>Be the first to review this product!</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {reviewsArray.map((review) => (
+            <div key={review.id} className="border border-gray-200 rounded-lg p-6">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-1">
+                    {renderStars(review.rating, false, 'w-4 h-4')}
                   </div>
-                  <div className="text-sm text-gray-600">{new Date(review.date).toLocaleDateString()}</div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium text-gray-900">
+                        {review.user ? `${review.user.firstName} ${review.user.lastName}` : review.guestName || review.userName || 'Anonymous'}
+                      </span>
+                      {review.isVerified && (
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                          Verified Purchase
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-600">{new Date(review.createdAt).toLocaleDateString()}</div>
+                  </div>
                 </div>
               </div>
-              <button className="flex items-center space-x-1 text-gray-500 hover:text-gray-700">
-                <ThumbsUp className="w-4 h-4" />
-                <span className="text-sm">{review.helpful}</span>
-              </button>
+              {review.title && (
+                <h6 className="font-semibold text-gray-800 mb-2">{review.title}</h6>
+              )}
+              <p className="text-gray-700 leading-relaxed">{review.comment}</p>
             </div>
-            <p className="text-gray-700 leading-relaxed">{review.comment}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 export default ProductReviews;
+
+

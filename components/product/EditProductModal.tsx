@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Save, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
 import { Product } from '@/lib/admin-data';
+import { useToast } from '@/hooks/use-toast';
 
 interface EditProductModalProps {
   isOpen: boolean;
@@ -21,21 +22,110 @@ export default function EditProductModal({
   categories,
   onAddCategory
 }: EditProductModalProps) {
+  const { toast } = useToast();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [flavorInput, setFlavorInput] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Update editing product when product prop changes
-  useState(() => {
+  useEffect(() => {
     if (product) {
       setEditingProduct({ ...product });
+      setImagePreview(product.image || '/images/product_1.webp');
+      setSelectedImage(null);
     }
-  });
+  }, [product]);
 
-  const handleSave = () => {
-    if (editingProduct) {
-      onSave(editingProduct);
-      onClose();
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Invalid File',
+          description: 'Please select an image file',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File Too Large',
+          description: 'Image size should be less than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!selectedImage) return null;
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+
+      const response = await fetch(`http://localhost:4000/api/products/upload-image`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data?.imageUrl) {
+        toast({
+          title: 'Success',
+          description: 'Image uploaded successfully',
+        });
+        return data.data.imageUrl;
+      } else {
+        throw new Error(data.message || 'Failed to upload image');
+      }
+    } catch (error: any) {
+      console.error('Image upload error:', error);
+      toast({
+        title: 'Upload Failed',
+        description: error.message || 'Failed to upload image',
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!editingProduct) return;
+
+    if (!editingProduct.name || !editingProduct.description || !editingProduct.category) {
+      toast({
+        title: 'Missing Required Fields',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    let updatedProduct = { ...editingProduct };
+
+    if (selectedImage) {
+      const uploadedUrl = await uploadImage();
+      if (uploadedUrl) {
+        updatedProduct.image = uploadedUrl;
+      }
+    }
+
+    onSave(updatedProduct);
+    onClose();
   };
 
   if (!isOpen || !product || !editingProduct) return null;
@@ -48,7 +138,7 @@ export default function EditProductModal({
             <h2 className="text-xl font-semibold text-gray-900">Edit Product</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 active:bg-black/50 p-1 rounded"
+              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:bg-gray-200 p-1 rounded transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
@@ -56,6 +146,39 @@ export default function EditProductModal({
         </div>
         
         <div className="p-6 space-y-4">
+          {/* Image Upload Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-orange-500 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                    id="edit-product-image"
+                  />
+                  <label htmlFor="edit-product-image" className="cursor-pointer">
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">Click to upload new image</p>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                  </label>
+                </div>
+              </div>
+              <div className="w-32 h-32 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon className="w-12 h-12 text-gray-400" />
+                )}
+              </div>
+            </div>
+            {selectedImage && (
+              <p className="text-sm text-green-600 mt-2">New image selected: {selectedImage.name}</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
@@ -80,8 +203,9 @@ export default function EditProductModal({
                 </select>
                 <button
                   onClick={onAddCategory}
-                  className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-black/50 flex items-center"
+                  className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 transition-colors flex items-center"
                   title="Add new category"
+                  type="button"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -206,16 +330,26 @@ export default function EditProductModal({
         <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 active:bg-black/50"
+            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-black/50 flex items-center"
+            disabled={uploadingImage}
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save className="w-4 h-4 mr-2" />
-            Update Product
+            {uploadingImage ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Update Product
+              </>
+            )}
           </button>
         </div>
       </div>

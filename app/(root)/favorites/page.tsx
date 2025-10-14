@@ -20,8 +20,8 @@ export default function FavoritesPage() {
       id: product.id,
       name: product.name,
       description: product.description,
-      currentPrice: product.currentPrice,
-      originalPrice: product.originalPrice,
+      currentPrice: Number(product.currentPrice || product.price || 0),
+      originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
       discount: product.discount,
       image: product.image,
       backgroundColor: product.backgroundColor
@@ -96,11 +96,11 @@ export default function FavoritesPage() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <span className="text-lg font-bold text-gray-900">
-                      ${product.currentPrice.toFixed(2)}
+                      ${Number(product.currentPrice || product.price || 0).toFixed(2)}
                     </span>
-                    {product.originalPrice && product.originalPrice > product.currentPrice && (
+                    {product.originalPrice && Number(product.originalPrice) > Number(product.currentPrice || product.price || 0) && (
                       <span className="text-sm text-gray-500 line-through">
-                        ${product.originalPrice.toFixed(2)}
+                        ${Number(product.originalPrice).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -148,3 +148,5 @@ export default function FavoritesPage() {
     </div>
   );
 }
+
+

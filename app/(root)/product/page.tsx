@@ -1,28 +1,59 @@
 'use client';
-import { siteData } from "@/content";
 import ProductCard from "@/components/custom/ProductCard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { api } from "@/lib/axios";
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  currentPrice: number;
+  price: number;
   originalPrice?: number;
   discount: number | null;
   image: string;
+  stock: number;
+  rating: number;
+  reviewCount: number;
 }
 
 const ProductPage = () => {
-  const { products } = siteData;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // State for filtering and pagination
   const [sortBy, setSortBy] = useState("default");
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/products', { 
+          page: 1, 
+          limit: 100 
+        });
+        
+        if (response.success) {
+          setProducts(response.data.products);
+        } else {
+          setError('Failed to load products');
+        }
+      } catch (err: any) {
+        console.error('Error fetching products:', err);
+        setError(err.message || 'Failed to load products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   // Filter and sort products
   let filteredProducts = products;
@@ -43,10 +74,10 @@ const ProductPage = () => {
       filteredProducts = [...filteredProducts].sort((a, b) => b.name.localeCompare(a.name));
       break;
     case "price-asc":
-      filteredProducts = [...filteredProducts].sort((a, b) => a.currentPrice - b.currentPrice);
+      filteredProducts = [...filteredProducts].sort((a, b) => Number(a.price) - Number(b.price));
       break;
     case "price-desc":
-      filteredProducts = [...filteredProducts].sort((a, b) => b.currentPrice - a.currentPrice);
+      filteredProducts = [...filteredProducts].sort((a, b) => Number(b.price) - Number(a.price));
       break;
     default:
       // Keep original order
@@ -74,6 +105,35 @@ const ProductPage = () => {
     setItemsPerPage(parseInt(value));
     setCurrentPage(1);
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="w-full h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#FF8C00] mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="w-full h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 text-lg mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-2 bg-[#FF8C00] text-white rounded-lg hover:bg-[#E67E00]"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full bg-white py-32">
@@ -120,6 +180,7 @@ const ProductPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
           {paginatedProducts.map((product) => (
               <ProductCard
+                key={product.id}
                 product={product}
                 onAddToCart={handleAddToCart}
                 className="hover:scale-105 transition-transform duration-300"

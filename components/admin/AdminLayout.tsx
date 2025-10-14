@@ -6,10 +6,7 @@ import {
   LayoutDashboard, 
   Package, 
   ShoppingCart, 
-  Users, 
   FileText, 
-  BarChart3, 
-  Settings, 
   LogOut,
   Menu,
   X,
@@ -20,8 +17,13 @@ import {
   Edit,
   Save,
   XCircle,
-  CreditCard,
-  Truck
+  Layers,
+  Mail,
+  Send,
+  Palette,
+  Tag,
+  Archive,
+  RotateCcw
 } from 'lucide-react';
 import Image from 'next/image';
 import Header from '@/components/shared/Header';
@@ -47,13 +49,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, current: pathname === '/admin' },
     { name: 'Products', href: '/admin/products', icon: Package, current: pathname === '/admin/products' },
+    { name: 'Categories', href: '/admin/categories', icon: Layers, current: pathname === '/admin/categories' },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart, current: pathname === '/admin/orders' },
-    { name: 'Payment Confirmation', href: '/admin/orders/payment-confirmation', icon: CreditCard, current: pathname === '/admin/orders/payment-confirmation' },
-    { name: 'Shipping & Tracking', href: '/admin/orders/shipping-tracking', icon: Truck, current: pathname === '/admin/orders/shipping-tracking' },
-    { name: 'Users', href: '/admin/users', icon: Users, current: pathname === '/admin/users' },
-    { name: 'Content', href: '/admin/content', icon: FileText, current: pathname === '/admin/content' },
-    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3, current: pathname === '/admin/analytics' },
-    { name: 'Settings', href: '/admin/settings', icon: Settings, current: pathname === '/admin/settings' },
+    { name: 'Flavors', href: '/admin/flavors', icon: Palette, current: pathname === '/admin/flavors' },
+    { name: 'Discounts', href: '/admin/discounts', icon: Tag, current: pathname === '/admin/discounts' },
+    { name: 'Inventory', href: '/admin/inventory', icon: Archive, current: pathname === '/admin/inventory' },
   ];
 
   useEffect(() => {
@@ -251,10 +251,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </div>
 
                 {/* Notifications */}
-                <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-600">
+                {/* <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-600">
                   <Bell className="w-5 h-5" />
                   <span className="absolute -mt-1 ml-4 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
+                </button> */}
 
                 {/* Admin Profile */}
                 <div className="relative">

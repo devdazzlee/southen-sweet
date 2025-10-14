@@ -3,11 +3,11 @@ import Image from 'next/image';
 import { Trash2, Plus, Minus } from 'lucide-react';
 
 interface CartItem {
-  id: number;
+  id: number | string;
   name: string;
   description: string;
-  currentPrice: number;
-  originalPrice?: number;
+  currentPrice: number | string;
+  originalPrice?: number | string;
   discount: number | null;
   image: string;
   quantity: number;
@@ -17,9 +17,9 @@ interface CartItem {
 
 interface CartItemProps {
   item: CartItem;
-  onSelect: (id: number, selected: boolean) => void;
-  onQuantityChange: (id: number, quantity: number) => void;
-  onRemove: (id: number) => void;
+  onSelect: (id: number | string, selected: boolean) => void;
+  onQuantityChange: (id: number | string, quantity: number) => void;
+  onRemove: (id: number | string) => void;
 }
 
 const CartItemComponent = ({ item, onSelect, onQuantityChange, onRemove }: CartItemProps) => {
@@ -34,13 +34,13 @@ const CartItemComponent = ({ item, onSelect, onQuantityChange, onRemove }: CartI
       />
 
       {/* Product Image */}
-      <div className="w-20 h-24 rounded-lg flex items-center justify-center flex-shrink-0">
+      <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-white">
         <Image
           src={item.image}
           alt={item.name}
-          width={80}
-          height={98}
-          className="w-full h-full object-contain"
+          width={96}
+          height={96}
+          className="w-full h-full object-cover"
         />
       </div>
 
@@ -76,9 +76,9 @@ const CartItemComponent = ({ item, onSelect, onQuantityChange, onRemove }: CartI
       {/* Price */}
       <div className="text-right">
         {item.originalPrice && (
-          <p className="text-sm text-gray-400 line-through">${item.originalPrice.toFixed(2)}</p>
+          <p className="text-sm text-gray-400 line-through">${Number(item.originalPrice).toFixed(2)}</p>
         )}
-        <p className="text-lg font-semibold text-gray-900">${item.currentPrice.toFixed(2)}</p>
+        <p className="text-lg font-semibold text-gray-900">${Number(item.currentPrice).toFixed(2)}</p>
       </div>
 
       {/* Remove Button */}

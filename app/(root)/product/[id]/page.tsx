@@ -1,5 +1,4 @@
 'use client';
-import { siteData } from "@/content";
 import ProductCard from "@/components/custom/ProductCard";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -11,94 +10,113 @@ import { useFavorites } from "@/contexts/FavoritesContext";
 import { useCart } from "@/contexts/CartContext";
 import { Heart, Star, StarHalf } from "lucide-react";
 import ProductReviews from "@/components/product/ProductReviews";
+import { api } from "@/lib/axios";
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  currentPrice: number;
+  price: number;
   originalPrice?: number;
   discount: number | null;
   image: string;
   backgroundColor?: string;
 }
 
-interface DetailedProduct extends Product {
-  brand: string;
-  sales: number;
+interface Review {
+  id: string;
   rating: number;
-  detailedDescription: string;
-  nutritionFacts: {
-    amountPerServing: string;
-    servingsPerContainer: string;
-    servingSize: string;
-    calories: number;
-    totalFat: number;
-    sodium: number;
-    totalCarbohydrate: number;
-    totalSugars: number;
-    addedSugars: number;
-    protein: number;
+  title?: string;
+  comment: string;
+  createdAt: string;
+  isVerified: boolean;
+  user?: {
+    firstName: string;
+    lastName: string;
   };
-  netWeight: string;
-  ingredients: string;
-  allergens: string;
- }
+}
+
+interface DetailedProduct {
+  id: string;
+  name: string;
+  description: string;
+  shortDescription?: string;
+  price: number;
+  originalPrice?: number;
+  discount: number | null;
+  image: string;
+  images?: string[];
+  brand?: string;
+  sales?: number;
+  rating?: number;
+  reviewCount?: number;
+  stock?: number;
+  nutritionFacts?: any;
+  weight?: string;
+  ingredients?: string;
+  allergens?: string;
+  backgroundColor?: string;
+  reviews?: Review[];
+}
 
 const SingleProductPage = () => {
   const params = useParams();
-  const productId = parseInt(params.id as string);
-  const { products } = siteData;
+  const productId = params.id as string;
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState<DetailedProduct | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (productId) {
-      const foundProduct = products.find(p => p.id === productId);
-      if (foundProduct) {
-        // Transform basic product to detailed product with mock data
-        const detailedProduct: DetailedProduct = {
-          ...foundProduct,
-          brand: "Southern Sweet",
-          sales: Math.floor(Math.random() * 500) + 100,
-          rating: 4.8,
-          detailedDescription: `A classic candy with a bold twist, featuring rich ${foundProduct.name.toLowerCase()} made from natural ingredients for an intense, aromatic flavor.`,
-          nutritionFacts: {
-            servingsPerContainer: "3 Servings per container",
-            servingSize: "1/3 Pieces (27g)",
-            amountPerServing: "Amount per serving",
-            calories: 100,
-            totalFat: 0.3,
-            sodium: 20,
-            totalCarbohydrate: 21,
-            totalSugars: 12,
-            addedSugars: 12,
-            protein: 12
-          },
-          netWeight: "Net Weight: 80g",
-          ingredients: "Corn Syrup, Wheat flour, sugar modified corn scratch, Licorice extract, palm and coconut oil, salt, glycerin, mono and diglycerides, artificial flavours, colors: Caramel",
-          allergens: "Contains: Wheat (gluten). May contains traces of Soy."
-        };
+    const fetchProduct = async () => {
+      try {
+        setLoading(true);
+        // Fetch single product
+        const response = await api.get(`/products/${productId}`);
+        
+        if (response.success && response.data) {
+          // API returns { success: true, data: { product } }
+          setProduct(response.data.product);
+        } else {
+          setError('Product not found');
+        }
 
-        setProduct(detailedProduct);
-
-        // Get related products (4 random products excluding current)
-        const otherProducts = products.filter(p => p.id !== productId);
-        const shuffled = otherProducts.sort(() => 0.5 - Math.random());
-        setRelatedProducts(shuffled.slice(0, 4));
+        // Fetch related products
+        const relatedResponse = await api.get('/products', { 
+          page: 1, 
+          limit: 8 
+        });
+        
+        if (relatedResponse.success && relatedResponse.data) {
+          // Filter out current product and get first 4
+          const filtered = relatedResponse.data.products.filter(
+            (p: Product) => p.id !== productId
+          );
+          setRelatedProducts(filtered.slice(0, 4));
+        }
+      } catch (err: any) {
+        console.error('Error fetching product:', err);
+        setError(err.message || 'Failed to load product');
+      } finally {
+        setLoading(false);
       }
-    }
-  }, [productId, products]);
+    };
 
-  const handleAddToCart = (product: Product) => {
+    if (productId) {
+      fetchProduct();
+    }
+  }, [productId]);
+
+  const handleAddToCart = (product: DetailedProduct) => {
     addToCart({
       id: product.id,
       name: product.name,
       description: product.description,
-      currentPrice: product.currentPrice,
+      currentPrice: product.price,
+      price: product.price,
       originalPrice: product.originalPrice,
       discount: product.discount,
       image: product.image,
@@ -106,11 +124,20 @@ const SingleProductPage = () => {
     });
   };
 
-  const handleToggleFavorite = (product: Product) => {
+  const handleToggleFavorite = (product: DetailedProduct) => {
     if (isFavorite(product.id)) {
       removeFromFavorites(product.id);
     } else {
-      addToFavorites(product);
+      addToFavorites({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        currentPrice: product.price,
+        originalPrice: product.originalPrice,
+        discount: product.discount,
+        image: product.image
+      });
     }
   };
 
@@ -141,8 +168,32 @@ const SingleProductPage = () => {
     return stars;
   };
 
-  if (!product) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  // Loading state
+  if (loading) {
+    return (
+      <div className="w-full h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#FF8C00] mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !product) {
+    return (
+      <div className="w-full h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 text-lg mb-4">{error || 'Product not found'}</p>
+          <Link href="/product">
+            <button className="px-6 py-2 bg-[#FF8C00] text-white rounded-lg hover:bg-[#E67E00]">
+              Back to Products
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -167,51 +218,66 @@ const SingleProductPage = () => {
           <div className="flex flex-col gap-16 p-8">
             {/* Brand and Name */}
             <div>
-              <p className="text-lg font-regular font-inter text-gray-600 mb-2">{product.brand}</p>
+              <p className="text-lg font-regular font-inter text-gray-600 mb-2">{product.brand || 'Southern Sweet'}</p>
               <h1 className="text-5xl font-semibold font-inter text-black mb-4">{product.name}</h1>
               <div className="flex items-center gap-4 text-lg font-medium font-inter text-gray-600">
-                <span>{product.sales} Sold</span>
+                <span>{product.sales || 0} Sold</span>
                 <span>•</span>
                 <div className="flex items-center gap-2">
-                  <span>{product.rating}</span>
+                  <span>{product.rating || 0}</span>
                   <div className="flex items-center">
-                    {renderStars(product.rating)}
+                    {renderStars(product.rating || 0)}
                   </div>
+                  {product.reviewCount && <span>({product.reviewCount} reviews)</span>}
                 </div>
               </div>
             </div>
 
             {/* Description */}
-            <p className="text-gray-700 font-inter text-lg font-regular">{product.detailedDescription}</p>
+            <p className="text-gray-700 font-inter text-lg font-regular">
+              {product.description}
+            </p>
 
             {/* Nutrition Facts */}
-            <div className="bg-gray-50 p-6 rounded-lg flex flex-col gap-10">
-              <h3 className="font-semibold text-2xl font-inter mb-2">Nutrition Facts</h3>
-              <div className="flex flex-col  gap-2 pl-6">
-                <li className="font-medium text-black">{product.nutritionFacts.servingsPerContainer}</li>
-                <li className="font-medium text-black">{product.nutritionFacts.servingSize}</li>
-                <li className="font-medium text-black">{product.nutritionFacts.amountPerServing}</li>
+            {product.nutritionFacts && (
+              <div className="bg-gray-50 p-6 rounded-lg flex flex-col gap-10">
+                <h3 className="font-semibold text-2xl font-inter mb-2">Nutrition Facts</h3>
+                <div className="flex flex-col  gap-2 pl-6">
+                  <li className="font-medium text-black">{product.nutritionFacts.servingsPerContainer}</li>
+                  <li className="font-medium text-black">{product.nutritionFacts.servingSize}</li>
+                  <li className="font-medium text-black">{product.nutritionFacts.amountPerServing}</li>
+                </div>
+                <h3 className="font-semibold text-2xl font-inter flex gap-4">Calories<ul>{product.nutritionFacts.calories}</ul></h3>
+                <div className="pl-4 border-b border-gray-200 flex flex-col gap-6">
+                  <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Total Fat <p>{product.nutritionFacts.totalFat}g (0% Daily Value)</p></h4>
+                  <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Sodium <p>{product.nutritionFacts.sodium}mg (1% Daily Value)</p></h4>
+                  <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Total Carbohydrate <p>{product.nutritionFacts.totalCarbohydrate}g (8% Daily Value)</p></h4>
+                  <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Total Sugars <p>{product.nutritionFacts.totalSugars}g (8% Daily Value)</p></h4>
+                  <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Includes <p>{product.nutritionFacts.addedSugars}g Added Sugars (24% Daily Value)</p></h4>
+                  <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Protein <p>{product.nutritionFacts.protein}mg</p></h4>
+                </div>
               </div>
-              <h3 className="font-semibold text-2xl font-inter flex gap-4">Calories<ul>{product.nutritionFacts.calories}</ul></h3>
-              <div className="pl-4 border-b border-gray-200 flex flex-col gap-6">
-                <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Total Fat <p>{product.nutritionFacts.totalFat}g (0% Daily Value)</p></h4>
-                <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Sodium <p>{product.nutritionFacts.sodium}mg (1% Daily Value)</p></h4>
-                <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Total Carbohydrate <p>{product.nutritionFacts.totalCarbohydrate}g (8% Daily Value)</p></h4>
-                <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Total Sugars <p>{product.nutritionFacts.totalSugars}g (8% Daily Value)</p></h4>
-                <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Includes <p>{product.nutritionFacts.addedSugars}g Added Sugars (24% Daily Value)</p></h4>
-                <h4 className="font-medium border-b border-gray-200 text-black flex justify-between">Protein <p>{product.nutritionFacts.protein}mg</p></h4>
-              </div>
-            </div>
+            )}
 
             {/* Ingredients */}
             <div className="flex flex-col gap-4">
-
-            {/* Net Weight */}
-            <h3 className="font-semibold text-2xl font-inter flex">{product.netWeight}</h3>
-              <h4 className="font-semibold text-lg font-inter text-gray-600">Ingredients:</h4>
-              <p className="text-sm text-gray-600">{product.ingredients}</p>
+              {/* Net Weight */}
+              {product.weight && (
+                <h3 className="font-semibold text-2xl font-inter flex">Net Weight: {product.weight}</h3>
+              )}
+              {product.ingredients && (
+                <>
+                  <h4 className="font-semibold text-lg font-inter text-gray-600">Ingredients:</h4>
+                  <p className="text-sm text-gray-600">{product.ingredients}</p>
+                </>
+              )}
+              {product.allergens && (
+                <>
+                  <h4 className="font-semibold text-lg font-inter text-gray-600">Allergens:</h4>
+                  <p className="text-sm text-gray-600">{product.allergens}</p>
+                </>
+              )}
             </div>
-
 
             {/* Price and Action Buttons */}
             <div className="border-0 w-full max-w-md flex flex-col gap-6">
@@ -219,8 +285,13 @@ const SingleProductPage = () => {
                 <div className="flex flex-col gap-1">
                   <p className="text-base sm:text-lg font-regular font-inter text-black">Price</p>
                   <span className="text-3xl sm:text-4xl font-regular font-inter text-black">
-                    ${product.currentPrice.toFixed(2)}
+                    ${Number(product.price).toFixed(2)}
                   </span>
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <span className="text-lg text-gray-400 line-through">
+                      ${Number(product.originalPrice).toFixed(2)}
+                    </span>
+                  )}
                 </div>
                 <Button
                   onClick={() => handleAddToCart(product)}
@@ -283,7 +354,11 @@ const SingleProductPage = () => {
         </div>
 
         {/* Product Reviews Section */}
-        <ProductReviews productId={product.id} productName={product.name} />
+        <ProductReviews 
+          productId={product.id} 
+          productName={product.name}
+          reviews={product.reviews || []}
+        />
       </div>
     </div>
   );

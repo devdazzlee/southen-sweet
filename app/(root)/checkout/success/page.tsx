@@ -1,110 +1,149 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { CheckCircle, Package, Mail, ArrowRight } from 'lucide-react';
-import Button from '@/components/custom/Button';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { CheckCircle, Package, Truck, ArrowRight, Loader2 } from 'lucide-react';
+import { useCart } from '@/contexts/CartContext';
 
-export default function CheckoutSuccessPage() {
+function SuccessContent() {
   const router = useRouter();
-  const [orderNumber] = useState(() => Math.floor(Math.random() * 1000000) + 100000);
+  const searchParams = useSearchParams();
+  const { clearCart } = useCart();
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Clear any cart data or redirect after 10 seconds
-    const timer = setTimeout(() => {
-      router.push('/product');
-    }, 10000);
-
-    return () => clearTimeout(timer);
-  }, [router]);
+    const session_id = searchParams.get('session_id');
+    if (session_id) {
+      setSessionId(session_id);
+      // Clear cart after successful payment
+      clearCart();
+    }
+  }, [searchParams, clearCart]);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-16">
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white pt-32 sm:pt-36 md:pt-40 pb-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          {/* Success Icon */}
-          <div className="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-green-100 mb-6">
-            <CheckCircle className="h-12 w-12 text-green-600" />
+        {/* Success Icon */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 bg-green-100 rounded-full mb-6">
+            <CheckCircle className="w-14 h-14 sm:w-16 sm:h-16 text-green-600" />
           </div>
-
-          {/* Success Message */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4 px-4">
             Order Confirmed!
           </h1>
-          
-          <p className="text-lg text-gray-600 mb-8">
-            Thank you for your order. We've received your payment and will begin processing your order shortly.
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 px-4">
+            Thank you for your purchase
           </p>
+        </div>
 
-          {/* Order Details */}
-          <div className="bg-gray-50 rounded-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Details</h2>
-            <div className="space-y-2 text-gray-600">
-              <p><span className="font-medium">Order Number:</span> #{orderNumber}</p>
-              <p><span className="font-medium">Order Date:</span> {new Date().toLocaleDateString()}</p>
-              <p><span className="font-medium">Estimated Delivery:</span> 5-7 business days</p>
-            </div>
-          </div>
-
-          {/* Next Steps */}
-          <div className="space-y-4 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900">What's Next?</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
-              <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg">
-                <Package className="w-6 h-6 text-blue-600 mt-1 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Order Processing</h4>
-                  <p className="text-sm text-gray-600">We'll prepare your licorice ropes with care</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3 p-4 bg-yellow-50 rounded-lg">
-                <Mail className="w-6 h-6 text-yellow-600 mt-1 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Shipping Notification</h4>
-                  <p className="text-sm text-gray-600">You'll receive tracking info via email</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600 mt-1 flex-shrink-0" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Delivery</h4>
-                  <p className="text-sm text-gray-600">Your delicious treats will arrive safely</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              onClick={() => router.push('/product')}
-              className="bg-orange-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
-            >
-              <span>Continue Shopping</span>
-              <ArrowRight className="w-5 h-5" />
-            </Button>
-            
-            <Button
-              onClick={() => router.push('/contact')}
-              className="bg-gray-100 text-gray-900 px-8 py-3 rounded-full font-semibold hover:bg-gray-200 transition-colors"
-            >
-              Contact Support
-            </Button>
-          </div>
-
-          {/* Additional Info */}
-          <div className="mt-8 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <p className="text-sm text-orange-700">
-              <strong>Questions about your order?</strong> Our customer service team is here to help. 
-              Contact us at <a href="mailto:support@licoriceropes.com" className="underline">support@licoriceropes.com</a> 
-              or call <a href="tel:+15551234567" className="underline">+1 (555) 123-4567</a>
+        {/* Order Details Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 md:p-8 mb-6">
+          <div className="border-b border-gray-200 pb-6 mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">
+              What happens next?
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600">
+              We&apos;ve received your order and will process it shortly
             </p>
           </div>
+
+          {/* Steps */}
+          <div className="space-y-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1">
+                  Order Confirmation
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-600 break-words">
+                  You&apos;ll receive an order confirmation email with order details and tracking information.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Package className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1">
+                  Order Processing
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-600 break-words">
+                  We&apos;re preparing your items for shipment. This usually takes 1-2 business days.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                <Truck className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1">
+                  Shipping & Delivery
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-600 break-words">
+                  Your order will be shipped with tracking information. You&apos;ll receive updates via email.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {sessionId && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg overflow-hidden">
+              <p className="text-xs sm:text-sm text-gray-600 break-all">
+                <span className="font-medium">Payment Session ID:</span>{' '}
+                <span className="font-mono text-[10px] sm:text-xs">{sessionId}</span>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+          <button
+            onClick={() => router.push('/product')}
+            className="px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base bg-orange-600 text-white rounded-full font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+          >
+            Continue Shopping
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base bg-white text-gray-900 border-2 border-gray-300 rounded-full font-semibold hover:bg-gray-50 transition-colors"
+          >
+            Back to Home
+          </button>
+        </div>
+
+        {/* Additional Info */}
+        <div className="mt-6 sm:mt-8 text-center">
+          <p className="text-sm sm:text-base text-gray-600 mb-2">
+            Need help? Contact our customer support
+          </p>
+          <a
+            href="/contact"
+            className="text-sm sm:text-base text-orange-600 hover:text-orange-700 font-medium"
+          >
+            Get Support
+          </a>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-orange-600" />
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
   );
 }

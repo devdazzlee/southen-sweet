@@ -7,20 +7,21 @@ import {
   Package, 
   DollarSign
 } from 'lucide-react';
-import AdminDataManager from '@/lib/admin-data';
+import { api } from '@/lib/axios';
 
 interface DashboardStats {
-  totalRevenue: number;
-  totalOrders: number;
-  totalCustomers: number;
-  totalProducts: number;
+  totalRevenue?: number;
+  totalOrders?: number;
+  totalCustomers?: number;
+  totalProducts?: number;
 }
 
 interface RecentOrder {
   id: string;
+  orderNumber: string;
   customer: string;
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+  status: string;
   date: string;
 }
 
@@ -34,41 +35,53 @@ export default function AdminDashboard() {
 
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const dataManager = AdminDataManager.getInstance();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      setIsLoading(true);
-      
-      // Simulate loading delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Get dashboard stats
-      const dashboardStats = dataManager.getDashboardStats();
-      setStats({
-        totalRevenue: dashboardStats.totalRevenue,
-        totalOrders: dashboardStats.totalOrders,
-        totalCustomers: dashboardStats.totalCustomers,
-        totalProducts: dashboardStats.totalProducts,
-      });
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch dashboard stats from API
+        const statsResponse = await api.get('/admin/dashboard');
+        
+        if (statsResponse.success && statsResponse.data) {
+          setStats({
+            totalRevenue: Number(statsResponse.data.totalRevenue) || 0,
+            totalOrders: Number(statsResponse.data.totalOrders) || 0,
+            totalCustomers: Number(statsResponse.data.totalCustomers) || 0,
+            totalProducts: Number(statsResponse.data.totalProducts) || 0,
+          });
+        }
 
-      // Get recent orders
-      const orders = dataManager.getOrders();
-      const recentOrdersData = orders.slice(0, 5).map(order => ({
-        id: order.orderNumber,
-        customer: order.customer.name,
-        total: order.total,
-        status: order.status,
-        date: order.createdAt.split('T')[0]
-      }));
-      setRecentOrders(recentOrdersData);
-
-      setIsLoading(false);
+        // Fetch recent orders from API
+        const ordersResponse = await api.get('/admin/orders', { limit: 5 });
+        
+        if (ordersResponse.success && ordersResponse.data) {
+          const orders = ordersResponse.data.orders || [];
+          const recentOrdersData = orders.map((order: any) => ({
+            id: order.id,
+            orderNumber: order.orderNumber,
+            customer: order.user 
+              ? `${order.user.firstName} ${order.user.lastName}`
+              : order.guestEmail || 'Guest',
+            total: Number(order.totalAmount),
+            status: order.status.toLowerCase(),
+            date: new Date(order.createdAt).toLocaleDateString()
+          }));
+          setRecentOrders(recentOrdersData);
+        }
+      } catch (err: any) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.message || 'Failed to load dashboard data');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchDashboardData();
-  }, [dataManager]);
+  }, []);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -93,6 +106,23 @@ export default function AdminDashboard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <p className="ml-4 text-gray-600">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -112,7 +142,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalRevenue)}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats?.totalRevenue || 0)}</p>
             </div>
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-green-600" />
@@ -125,7 +155,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Orders</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalOrders.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">{(stats?.totalOrders || 0).toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <ShoppingCart className="w-5 h-5 text-blue-600" />
@@ -138,7 +168,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Users</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalCustomers.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">{(stats?.totalCustomers || 0).toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <Users className="w-5 h-5 text-purple-600" />
@@ -151,7 +181,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Products</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalProducts}</p>
+              <p className="text-2xl font-bold text-gray-900">{(stats?.totalProducts || 0).toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
               <Package className="w-5 h-5 text-orange-600" />
@@ -190,7 +220,7 @@ export default function AdminDashboard() {
               {recentOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {order.id}
+                    {order.orderNumber}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {order.customer}

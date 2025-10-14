@@ -8,10 +8,11 @@ import { useState } from "react";
 import { useCart } from '@/contexts/CartContext';
 
 interface Product {
-  id: number;
+  id: string | number;
   name: string;
   description: string;
-  currentPrice: number;
+  price?: number;
+  currentPrice?: number;
   originalPrice?: number;
   discount: number | null;
   image: string;
@@ -28,6 +29,9 @@ const ProductCard = ({ product, onAddToCart, className }: ProductCardProps) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { addToCart } = useCart();
 
+  // Handle both API format (price) and legacy format (currentPrice)
+  const productPrice = product.price || product.currentPrice || 0;
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -37,7 +41,8 @@ const ProductCard = ({ product, onAddToCart, className }: ProductCardProps) => {
       id: product.id,
       name: product.name,
       description: product.description,
-      currentPrice: product.currentPrice,
+      currentPrice: productPrice,
+      price: productPrice,
       originalPrice: product.originalPrice,
       discount: product.discount,
       image: product.image,
@@ -117,11 +122,11 @@ const ProductCard = ({ product, onAddToCart, className }: ProductCardProps) => {
             {/* Price Section */}
             <div className="flex items-center gap-2">
               <span className="text-orange-500 text-xl font-bold">
-                ${product.currentPrice.toFixed(2)}
+                ${Number(productPrice).toFixed(2)}
               </span>
-              {product.originalPrice && product.originalPrice > product.currentPrice && (
+              {product.originalPrice && product.originalPrice > productPrice && (
                 <span className="text-gray-400 text-sm line-through">
-                  ${product.originalPrice.toFixed(2)}
+                  ${Number(product.originalPrice).toFixed(2)}
                 </span>
               )}
             </div>

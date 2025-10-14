@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Shield, Lock, User, Mail, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Shield, Lock, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 
 export default function AdminLogin() {
@@ -15,6 +15,7 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -25,11 +26,17 @@ export default function AdminLogin() {
       document.documentElement.classList.add('dark');
     }
 
-    // Check if already authenticated
-    const adminAuth = document.cookie.includes('adminAuth=true');
-    if (adminAuth) {
-      router.push('/admin');
-    }
+    // Check if already authenticated with a slight delay to avoid flashing
+    setTimeout(() => {
+      const adminAuth = document.cookie.includes('adminAuth=true');
+      const hasToken = localStorage.getItem('accessToken');
+      
+      if (adminAuth && hasToken) {
+        router.push('/admin');
+      } else {
+        setCheckingAuth(false);
+      }
+    }, 100);
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,44 +45,66 @@ export default function AdminLogin() {
     setError('');
     setSuccess('');
 
-    // Simulate authentication delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // Call real login API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-    // Enhanced authentication logic
-    const validCredentials = [
-      { email: 'admin@licoriceropes.com', password: 'admin123', role: 'Super Admin' },
-      { email: 'manager@licoriceropes.com', password: 'manager123', role: 'Manager' },
-      { email: 'staff@licoriceropes.com', password: 'staff123', role: 'Staff' }
-    ];
+      const data = await response.json();
 
-    const user = validCredentials.find(
-      cred => cred.email === formData.email && cred.password === formData.password
-    );
+      if (data.success && data.data) {
+        const user = data.data.user;
+        
+        // Check if user is admin
+        if (user.role !== 'ADMIN') {
+          setError('Access denied. Admin privileges required.');
+          setIsLoading(false);
+          return;
+        }
 
-    if (user) {
-      // Store secure session data
-      const sessionData = {
-        email: user.email,
-        role: user.role,
-        loginTime: new Date().toISOString(),
-        sessionId: Math.random().toString(36).substring(7)
-      };
-      
-      // Set secure cookie with session data
-      document.cookie = `adminAuth=true; path=/; max-age=86400; secure; samesite=strict`;
-      document.cookie = `adminUser=${encodeURIComponent(JSON.stringify(sessionData))}; path=/; max-age=86400; secure; samesite=strict`;
-      
-      // Store in localStorage for quick access
-      localStorage.setItem('adminUser', JSON.stringify(sessionData));
-      
-      setSuccess('Login successful! Redirecting...');
-      
-      // Redirect after success message
-      setTimeout(() => {
-        router.push('/admin');
-      }, 1000);
-    } else {
-      setError('Invalid credentials. Please check your email and password.');
+        // Store session data
+        const sessionData = {
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          loginTime: new Date().toISOString(),
+          sessionId: Math.random().toString(36).substring(7)
+        };
+        
+        // Store access token
+        localStorage.setItem('accessToken', data.data.accessToken);
+        
+        // Set cookie with session data (remove secure flag for localhost)
+        const isProduction = window.location.protocol === 'https:';
+        const secureFlag = isProduction ? 'secure;' : '';
+        document.cookie = `adminAuth=true; path=/; max-age=86400; ${secureFlag} samesite=lax`;
+        document.cookie = `adminUser=${encodeURIComponent(JSON.stringify(sessionData))}; path=/; max-age=86400; ${secureFlag} samesite=lax`;
+        
+        // Store in localStorage for quick access
+        localStorage.setItem('adminUser', JSON.stringify(sessionData));
+        
+        setSuccess('Login successful! Redirecting...');
+        
+        // Redirect after success message
+        setTimeout(() => {
+          router.push('/admin');
+        }, 1000);
+      } else {
+        setError(data.message || 'Invalid credentials. Please check your email and password.');
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError('Login failed. Please try again.');
     }
     
     setIsLoading(false);
@@ -87,6 +116,22 @@ export default function AdminLogin() {
       [e.target.name]: e.target.value,
     });
   };
+
+  // Show loading while checking authentication
+  if (checkingAuth) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${
+        isDarkMode 
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+          : 'bg-gradient-to-br from-orange-50 via-orange-100 to-orange-50'
+      }`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 ${
@@ -192,26 +237,6 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
-              </div>
-
-              <div className="text-sm">
-                <a href="#" className="font-medium text-orange-600 hover:text-orange-500">
-                  Forgot your password?
-                </a>
-              </div>
-            </div>
-
             <div>
               <button
                 type="submit"
@@ -232,44 +257,6 @@ export default function AdminLogin() {
               </button>
             </div>
           </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className={`absolute inset-0 flex items-center ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                <div className={`w-full border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`} />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className={`px-2 ${isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>Demo Credentials</span>
-              </div>
-            </div>
-
-            <div className={`mt-4 p-4 rounded-md ${isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50 border border-gray-200'}`}>
-              <p className={`text-xs mb-3 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Available test accounts:</p>
-              <div className="space-y-2">
-                <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>
-                  <div className="flex items-center mb-1">
-                    <User className="w-3 h-3 mr-1 text-orange-500" />
-                    <span className="font-medium">Super Admin</span>
-                  </div>
-                  <p className="text-xs ml-4">admin@licoriceropes.com / admin123</p>
-                </div>
-                <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>
-                  <div className="flex items-center mb-1">
-                    <User className="w-3 h-3 mr-1 text-blue-500" />
-                    <span className="font-medium">Manager</span>
-                  </div>
-                  <p className="text-xs ml-4">manager@licoriceropes.com / manager123</p>
-                </div>
-                <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>
-                  <div className="flex items-center mb-1">
-                    <User className="w-3 h-3 mr-1 text-green-500" />
-                    <span className="font-medium">Staff</span>
-                  </div>
-                  <p className="text-xs ml-4">staff@licoriceropes.com / staff123</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="text-center">

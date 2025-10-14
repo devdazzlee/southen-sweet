@@ -1,15 +1,15 @@
 'use client';
-import { siteData } from "@/content";
 import ProductCard from "@/components/custom/ProductCard";
 import Image from "next/image";
 import Button from "@/components/custom/Button"
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { api } from "@/lib/axios";
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   description: string;
-  currentPrice: number;
+  price: number;
   originalPrice?: number;
   discount: number | null;
   image: string;
@@ -17,22 +17,36 @@ interface Product {
 }
 
 const ExploreItems = () => {
-  const { products } = siteData;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Products are already in the correct format from index.ts
-  const productList: Product[] = products.map((product: any) => ({
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    currentPrice: product.currentPrice,
-    originalPrice: product.originalPrice,
-    discount: product.discount,
-    image: product.image,
-    backgroundColor: product.backgroundColor || "#FFB6C1" // Fallback color
-  }));
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/products', { 
+          page: 1, 
+          limit: 8 
+        });
+        
+        console.log('Explore Items API Response:', response);
+        
+        if (response.success && response.data && response.data.products) {
+          setProducts(response.data.products);
+          console.log('Explore Items Products Set:', response.data.products);
+        } else {
+          console.error('Invalid response structure:', response);
+        }
+      } catch (err: any) {
+        console.error('Error fetching products in Explore Items:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Debug: Log to ensure all products are loaded
-  console.log('Total products loaded:', productList.length);
+    fetchProducts();
+  }, []);
 
   const handleAddToCart = (product: Product) => {
     console.log("Adding to cart:", product);
@@ -54,16 +68,23 @@ const ExploreItems = () => {
           
         </div>
 
-        {/* Products Grid - Show only 8 products */}
+        {/* Products Grid - Show only 4 products */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8 w-full">
-          {productList.slice(0, 4).map((product: Product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onAddToCart={handleAddToCart}
-              className="w-full"
-            />
-          ))}
+          {loading ? (
+            // Loading skeleton
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div key={idx} className="w-full h-[500px] bg-gray-200 animate-pulse rounded-lg"></div>
+            ))
+          ) : (
+            products.slice(0, 4).map((product: Product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAddToCart={handleAddToCart}
+                className="w-full"
+              />
+            ))
+          )}
         </div>
       </div>
     </section>

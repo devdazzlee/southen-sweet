@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, Download, DollarSign, Package, ToggleLeft } from 'lucide-react';
+import { Upload, Download, Edit } from 'lucide-react';
 import { api } from '@/lib/axios';
 
 export default function BulkOperationsPage() {

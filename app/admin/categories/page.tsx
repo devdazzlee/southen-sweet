@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { api } from '@/lib/axios';
+import { useToast } from '@/hooks/use-toast';
 
 interface Category {
   id: string;
@@ -14,6 +16,7 @@ interface Category {
 }
 
 export default function CategoriesPage() {
+  const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -33,13 +36,17 @@ export default function CategoriesPage() {
   const fetchCategories = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/categories');
-      const data = await response.json();
-      if (data.success) {
-        setCategories(data.data.categories);
+      const response = await api.get('/categories');
+      if (response.success && response.data && response.data.categories) {
+        setCategories(response.data.categories);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching categories:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to load categories',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -48,29 +55,29 @@ export default function CategoriesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const url = editingCategory
-        ? `http://localhost:5000/api/admin/categories/${editingCategory.id}`
-        : 'http://localhost:5000/api/categories';
-      
-      const method = editingCategory ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-        credentials: 'include'
-      });
+      let response;
+      if (editingCategory) {
+        response = await api.put(`/categories/${editingCategory.id}`, formData);
+      } else {
+        response = await api.post('/categories', formData);
+      }
 
-      const data = await response.json();
-      if (data.success) {
+      if (response.success) {
+        toast({
+          title: 'Success',
+          description: `Category ${editingCategory ? 'updated' : 'created'} successfully`,
+        });
         fetchCategories();
         setShowModal(false);
         resetForm();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving category:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save category',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -78,17 +85,22 @@ export default function CategoriesPage() {
     if (!confirm('Are you sure you want to delete this category?')) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/categories/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
+      const response = await api.delete(`/categories/${id}`);
 
-      const data = await response.json();
-      if (data.success) {
+      if (response.success) {
+        toast({
+          title: 'Success',
+          description: 'Category deleted successfully',
+        });
         fetchCategories();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting category:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete category',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -203,7 +215,7 @@ export default function CategoriesPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">
               {editingCategory ? 'Edit Category' : 'Add Category'}
@@ -304,3 +316,5 @@ export default function CategoriesPage() {
     </div>
   );
 }
+
+

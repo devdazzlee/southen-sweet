@@ -11,7 +11,7 @@ import { useCart } from '@/contexts/CartContext';
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { favorites, hasUnreadNotifications } = useFavorites();
+  const { favorites } = useFavorites();
   const { getCartCount } = useCart();
 
   useEffect(() => {
@@ -96,29 +96,8 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* User & Cart Icons - Mobile Only */}
+        {/* Cart & Favorites Icons - Desktop */}
         <div className="hidden md:flex items-center justify-center gap-2 lg:gap-2 xl:gap-3">
-          <Link
-            href="/dashboard"
-            className="relative flex items-center justify-center p-1 lg:p-1.5 xl:p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-            // style={{ minWidth: 36, minHeight: 36 }}
-            aria-label="User Account"
-          >
-            <Image
-              src="/svg/user.svg"
-              alt="User Account"
-              width={20}
-              height={20}
-              // className="w-5 h-5 lg:w-6 lg:h-6 xl:w-7 xl:h-7"
-              // style={{ maxWidth: "100%", height: "auto" }}
-              priority
-            />
-            {/* Notification badge - simple dot indicator */}
-            {hasUnreadNotifications && (
-              <div className="absolute -top-1 -left-1 w-3 h-3 bg-red-500 rounded-full z-20"></div>
-            )}
-          </Link>
-          
           {/* Favorites Icon */}
           <Link
             href="/favorites"
@@ -141,7 +120,6 @@ export default function Header() {
           <Link
             href="/checkout"
             className="relative flex items-center justify-center p-1 lg:p-1.5 xl:p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-            // style={{ minWidth: 36, minHeight: 36 }}
             aria-label="Shopping Cart"
           >
             <Image
@@ -150,7 +128,6 @@ export default function Header() {
               width={22}
               height={22}
               className="w-5 h-5 lg:w-6 lg:h-6 xl:w-7 xl:h-7"
-              // style={{ maxWidth: "100%", height: "auto" }}
               priority
             />
             {/* Cart count badge */}
@@ -203,15 +180,15 @@ export default function Header() {
                 </button>
               ))}
             </nav>
-            {/* User & Cart Links */}
+            {/* Favorites & Cart Links */}
             <div className="flex items-center justify-center gap-4 h-1/4 border-b border-gray-200">
               <Link
-                href="/dashboard"
+                href="/favorites"
                 className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-[#FF8C00]/10 hover:text-[#FF8C00] rounded-lg transition-colors text-base"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <Image src="/svg/user.svg" alt="User Account" width={18} height={18} className="w-5 h-5" />
-                Account
+                <Heart className="w-5 h-5" />
+                Favorites
               </Link>
               <Link
                 href="/checkout"
