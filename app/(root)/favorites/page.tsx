@@ -16,8 +16,14 @@ export default function FavoritesPage() {
   };
 
   const handleAddToCart = (product: any) => {
+    // Validate ID exists
+    if (!product.id || product.id === null || product.id === undefined || product.id === '') {
+      console.error('❌ Invalid product ID when adding to cart from favorites:', product.id);
+      return;
+    }
+    
     addToCart({
-      id: product.id,
+      id: product.id, // Use ID as-is (string or number)
       name: product.name,
       description: product.description,
       currentPrice: Number(product.currentPrice || product.price || 0),

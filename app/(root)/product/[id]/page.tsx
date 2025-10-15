@@ -115,8 +115,19 @@ const SingleProductPage = () => {
   }, [productId]);
 
   const handleAddToCart = (product: DetailedProduct) => {
+    // Validate ID exists
+    if (!product.id || product.id === null || product.id === undefined || product.id === '') {
+      console.error('❌ Invalid product ID:', product.id);
+      toast({
+        title: "Error",
+        description: "Cannot add this product to cart. Invalid product ID.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     addToCart({
-      id: product.id,
+      id: product.id, // Use ID as-is (string or number)
       name: product.name,
       description: product.description,
       currentPrice: product.price,
@@ -135,8 +146,19 @@ const SingleProductPage = () => {
   };
 
   const handleBuyNow = (product: DetailedProduct) => {
+    // Validate ID exists
+    if (!product.id || product.id === null || product.id === undefined || product.id === '') {
+      console.error('❌ Invalid product ID:', product.id);
+      toast({
+        title: "Error",
+        description: "Cannot purchase this product. Invalid product ID.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     addToCart({
-      id: product.id,
+      id: product.id, // Use ID as-is (string or number)
       name: product.name,
       description: product.description,
       currentPrice: product.price,

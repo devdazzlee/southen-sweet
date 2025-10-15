@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface CartItem {
-  id: number;
+  id: number | string; // Support both numeric and string IDs (for Prisma CUID)
   name: string;
   description: string;
   currentPrice: number;
@@ -16,8 +16,8 @@ interface CartItem {
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (product: Omit<CartItem, 'quantity'>) => void;
-  removeFromCart: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  removeFromCart: (productId: number | string) => void;
+  updateQuantity: (productId: number | string, quantity: number) => void;
   clearCart: () => void;
   getCartCount: () => number;
   getCartTotal: () => number;
@@ -59,13 +59,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   }, [cartItems]);
 
   const addToCart = (product: Omit<CartItem, 'quantity'>) => {
+    console.log('🛒 Adding to cart:', { id: product.id, name: product.name });
+    
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === product.id);
+      const existingItem = prevItems.find(item => String(item.id) === String(product.id));
       
       if (existingItem) {
         // If item already exists, increase quantity
         return prevItems.map(item =>
-          item.id === product.id
+          String(item.id) === String(product.id)
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
@@ -76,11 +78,30 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     });
   };
 
-  const removeFromCart = (productId: number) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
+  const removeFromCart = (productId: number | string) => {
+    console.log('🗑️ removeFromCart called with productId:', productId);
+    console.log('🗑️ Current cart items:', cartItems.map(item => ({ id: item.id, name: item.name })));
+    
+    if (!productId || productId === null || productId === undefined || productId === '') {
+      console.error('❌ Cannot remove item - invalid productId:', productId);
+      return;
+    }
+    
+    setCartItems(prevItems => {
+      const filteredItems = prevItems.filter(item => String(item.id) !== String(productId));
+      console.log('🗑️ After removal, remaining items:', filteredItems.map(item => ({ id: item.id, name: item.name })));
+      return filteredItems;
+    });
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (productId: number | string, quantity: number) => {
+    console.log('📝 updateQuantity called:', { productId, quantity });
+    
+    if (!productId || productId === null || productId === undefined || productId === '') {
+      console.error('❌ Cannot update quantity - invalid productId:', productId);
+      return;
+    }
+    
     if (quantity <= 0) {
       removeFromCart(productId);
       return;
@@ -88,7 +109,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     setCartItems(prevItems =>
       prevItems.map(item =>
-        item.id === productId
+        String(item.id) === String(productId)
           ? { ...item, quantity: Math.max(1, quantity) }
           : item
       )

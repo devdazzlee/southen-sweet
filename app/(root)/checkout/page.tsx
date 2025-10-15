@@ -30,7 +30,7 @@ interface ShippingAddress {
 }
 
 export default function CheckoutPage() {
-  const { cartItems, updateQuantity, removeFromCart, getCartSubtotal } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, clearCart, getCartSubtotal } = useCart();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1); // 1: Cart Review, 2: Shipping Address, 3: Shipping Method
   const [calculatingShipping, setCalculatingShipping] = useState(false);
@@ -92,18 +92,20 @@ export default function CheckoutPage() {
 
     // Filter out invalid cart items (items without valid IDs)
     const validCartItems = cartItems.filter(item => {
-      if (!item.id || item.id === null || item.id === undefined) {
-        console.warn('⚠️ Removing invalid cart item:', item);
-        removeFromCart(item.id); // Remove invalid items from cart
-        return false;
+      const isValid = item.id && item.id !== null && item.id !== undefined && item.id !== '';
+      if (!isValid) {
+        console.warn('⚠️ Found invalid cart item (will be skipped):', item);
       }
-      return true;
+      return isValid;
     });
 
     if (validCartItems.length === 0) {
-      setError('Your cart contains invalid items. Please refresh the page and add products again.');
+      setError('Your cart contains invalid items. Please clear your cart and add products again.');
       return;
     }
+    
+    // Log valid items being sent
+    console.log('📦 Sending valid cart items:', validCartItems.map(item => ({ id: item.id, name: item.name, quantity: item.quantity })));
 
     setCalculatingShipping(true);
     setError(null);
@@ -328,14 +330,20 @@ export default function CheckoutPage() {
                           {/* Quantity Controls - Mobile */}
                           <div className="flex items-center gap-2 sm:gap-3 mt-2">
                             <button
-                              onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                              onClick={() => {
+                                console.log('Decreasing quantity for item:', item.id);
+                                updateQuantity(item.id, Math.max(1, item.quantity - 1));
+                              }}
                               className="p-1 rounded-md hover:bg-gray-100 border border-gray-300"
                             >
                               <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
                             </button>
                             <span className="text-sm sm:text-base font-medium px-2 sm:px-3 min-w-[2rem] text-center">{item.quantity}</span>
                             <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              onClick={() => {
+                                console.log('Increasing quantity for item:', item.id);
+                                updateQuantity(item.id, item.quantity + 1);
+                              }}
                               className="p-1 rounded-md hover:bg-gray-100 border border-gray-300"
                             >
                               <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -350,7 +358,14 @@ export default function CheckoutPage() {
                           ${(Number(item.currentPrice) * item.quantity).toFixed(2)}
                         </p>
                         <button
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => {
+                            console.log('Removing item from cart:', { id: item.id, name: item.name });
+                            if (item.id && item.id !== null && item.id !== undefined && item.id !== '') {
+                              removeFromCart(item.id);
+                            } else {
+                              console.error('Cannot remove item - ID is invalid:', item);
+                            }
+                          }}
                           className="text-red-600 hover:text-red-700 flex items-center gap-1 text-xs sm:text-sm"
                         >
                           <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -361,13 +376,27 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                <button
-                  onClick={() => setCurrentStep(2)}
-                  className="mt-6 w-full bg-orange-600 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  Proceed to Shipping
-                  <MapPin className="w-5 h-5" />
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      if (confirm('Are you sure you want to clear your entire cart?')) {
+                        console.log('Clearing entire cart');
+                        clearCart();
+                      }
+                    }}
+                    className="sm:w-auto px-6 py-2 border-2 border-red-600 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Clear Cart
+                  </button>
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    Proceed to Shipping
+                    <MapPin className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             )}
 

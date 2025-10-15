@@ -40,9 +40,20 @@ const ProductCard = ({ product, onAddToCart, className }: ProductCardProps) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Add to cart using the context
+    // Validate ID exists
+    if (!product.id || product.id === null || product.id === undefined || product.id === '') {
+      console.error('❌ Invalid product ID:', product.id);
+      toast({
+        title: "Error",
+        description: "Cannot add this product to cart. Invalid product ID.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Add to cart using the context (supports both string and number IDs)
     addToCart({
-      id: Number(product.id),
+      id: product.id, // Use ID as-is (string or number)
       name: product.name,
       description: product.description,
       currentPrice: productPrice,
@@ -67,9 +78,20 @@ const ProductCard = ({ product, onAddToCart, className }: ProductCardProps) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Add to cart first
+    // Validate ID exists
+    if (!product.id || product.id === null || product.id === undefined || product.id === '') {
+      console.error('❌ Invalid product ID:', product.id);
+      toast({
+        title: "Error",
+        description: "Cannot purchase this product. Invalid product ID.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Add to cart first (supports both string and number IDs)
     addToCart({
-      id: Number(product.id),
+      id: product.id, // Use ID as-is (string or number)
       name: product.name,
       description: product.description,
       currentPrice: productPrice,
