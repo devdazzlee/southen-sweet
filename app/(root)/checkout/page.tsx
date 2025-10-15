@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useRouter } from 'next/navigation';
-import { CheckoutProgress, CartSection, CartTotals } from '@/components/checkout';
+import { CheckoutProgress } from '@/components/checkout';
 import { Loader2, Package, Truck, CreditCard, MapPin, CheckCircle, Trash2, Plus, Minus } from 'lucide-react';
 import axios from 'axios';
 import Image from 'next/image';
@@ -30,7 +30,7 @@ interface ShippingAddress {
 }
 
 export default function CheckoutPage() {
-  const { cartItems, updateQuantity, removeFromCart, getCartTotal, getCartSubtotal } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, getCartSubtotal } = useCart();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1); // 1: Cart Review, 2: Shipping Address, 3: Shipping Method
   const [calculatingShipping, setCalculatingShipping] = useState(false);
@@ -127,9 +127,15 @@ export default function CheckoutPage() {
     } else {
         setError('No shipping rates available for this address');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Shipping calculation error:', err);
-      setError(err.response?.data?.error || 'Failed to calculate shipping rates');
+      const errorMessage = err instanceof Error && 'response' in err && 
+        typeof err.response === 'object' && err.response !== null &&
+        'data' in err.response && typeof err.response.data === 'object' && err.response.data !== null &&
+        'error' in err.response.data && typeof err.response.data.error === 'string'
+        ? err.response.data.error
+        : 'Failed to calculate shipping rates';
+      setError(errorMessage);
     } finally {
       setCalculatingShipping(false);
     }
@@ -150,8 +156,8 @@ export default function CheckoutPage() {
         productId: item.id.toString(),
         productName: item.name,
         quantity: item.quantity,
-        price: Number(item.price),
-        total: Number(item.price) * item.quantity,
+        price: Number(item.currentPrice),
+        total: Number(item.currentPrice) * item.quantity,
       }));
 
       const orderData = {
@@ -184,7 +190,7 @@ export default function CheckoutPage() {
               ...cartItems.map((item) => ({
                 productName: item.name,
                 name: item.name,
-                price: Number(item.price),
+                price: Number(item.currentPrice),
                 quantity: item.quantity,
               })),
               // Shipping as separate line item
@@ -215,9 +221,10 @@ export default function CheckoutPage() {
     } else {
         setError('Failed to create checkout session');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Payment error:', err);
-      setError(err.message || 'Failed to process payment');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process payment';
+      setError(errorMessage);
     } finally {
       setProcessingPayment(false);
     }
@@ -301,7 +308,7 @@ export default function CheckoutPage() {
                         {/* Product Details */}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{item.name}</h3>
-                          <p className="text-xs sm:text-sm text-gray-600">${Number(item.price).toFixed(2)} each</p>
+                          <p className="text-xs sm:text-sm text-gray-600">${Number(item.currentPrice).toFixed(2)} each</p>
                           
                           {/* Quantity Controls - Mobile */}
                           <div className="flex items-center gap-2 sm:gap-3 mt-2">
@@ -325,7 +332,7 @@ export default function CheckoutPage() {
                       {/* Price and Remove */}
                       <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start sm:text-right gap-2">
                         <p className="text-base sm:text-lg font-semibold text-gray-900">
-                          ${(Number(item.price) * item.quantity).toFixed(2)}
+                          ${(Number(item.currentPrice) * item.quantity).toFixed(2)}
                         </p>
                         <button
                           onClick={() => removeFromCart(item.id)}
@@ -595,7 +602,7 @@ export default function CheckoutPage() {
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="font-medium text-sm sm:text-base text-gray-900">
-                        ${(Number(item.price) * item.quantity).toFixed(2)}
+                        ${(Number(item.currentPrice) * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   </div>

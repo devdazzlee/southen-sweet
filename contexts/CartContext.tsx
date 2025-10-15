@@ -89,7 +89,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     setCartItems(prevItems =>
       prevItems.map(item =>
         item.id === productId
-          ? { ...item, quantity }
+          ? { ...item, quantity: Math.max(1, quantity) }
           : item
       )
     );
