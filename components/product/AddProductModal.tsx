@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { Plus, Save, X, Upload, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 import { Product } from '@/lib/admin-data';
 import { useToast } from '@/hooks/use-toast';
-import api from '@/lib/axios';
+import { api } from '@/lib/axios';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -82,27 +83,23 @@ export default function AddProductModal({
       const formData = new FormData();
       formData.append('image', selectedImage);
 
-      const response = await fetch(`http://localhost:4000/api/products/upload-image`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await api.upload('/products/upload-image', formData);
 
-      const data = await response.json();
-
-      if (data.success && data.data?.imageUrl) {
+      if (response.success && response.data?.imageUrl) {
         toast({
           title: 'Success',
           description: 'Image uploaded successfully',
         });
-        return data.data.imageUrl;
+        return response.data.imageUrl;
       } else {
-        throw new Error(data.message || 'Failed to upload image');
+        throw new Error(response.message || 'Failed to upload image');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Image upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload image';
       toast({
         title: 'Upload Failed',
-        description: error.message || 'Failed to upload image',
+        description: errorMessage,
         variant: 'destructive',
       });
       return null;
@@ -252,7 +249,7 @@ export default function AddProductModal({
               </div>
               <div className="w-32 h-32 border border-gray-300 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
                 {imagePreview ? (
-                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  <Image src={imagePreview} alt="Preview" width={128} height={128} className="w-full h-full object-cover" />
                 ) : (
                   <ImageIcon className="w-12 h-12 text-gray-400" />
                 )}
