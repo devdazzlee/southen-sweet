@@ -90,6 +90,21 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Filter out invalid cart items (items without valid IDs)
+    const validCartItems = cartItems.filter(item => {
+      if (!item.id || item.id === null || item.id === undefined) {
+        console.warn('⚠️ Removing invalid cart item:', item);
+        removeFromCart(item.id); // Remove invalid items from cart
+        return false;
+      }
+      return true;
+    });
+
+    if (validCartItems.length === 0) {
+      setError('Your cart contains invalid items. Please refresh the page and add products again.');
+      return;
+    }
+
     setCalculatingShipping(true);
     setError(null);
 
@@ -108,7 +123,7 @@ export default function CheckoutPage() {
             zip: address.zipCode,
             country: address.country,
           },
-          orderItems: cartItems.map((item) => ({
+          orderItems: validCartItems.map((item) => ({
             productId: item.id,
             quantity: item.quantity,
           })),
