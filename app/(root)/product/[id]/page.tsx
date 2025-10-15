@@ -11,6 +11,8 @@ import { useCart } from "@/contexts/CartContext";
 import { Heart, Star, StarHalf } from "lucide-react";
 import ProductReviews from "@/components/product/ProductReviews";
 import { api } from "@/lib/axios";
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 interface Product {
   id: string;
@@ -64,6 +66,8 @@ const SingleProductPage = () => {
   const productId = params.id as string;
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const { addToCart } = useCart();
+  const { toast } = useToast();
+  const router = useRouter();
 
   const [product, setProduct] = useState<DetailedProduct | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -122,6 +126,29 @@ const SingleProductPage = () => {
       image: product.image,
       backgroundColor: product.backgroundColor
     });
+    
+    // Show toast notification
+    toast({
+      title: "Added to Cart!",
+      description: `${product.name} has been added to your cart.`,
+    });
+  };
+
+  const handleBuyNow = (product: DetailedProduct) => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      currentPrice: product.price,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      discount: product.discount,
+      image: product.image,
+      backgroundColor: product.backgroundColor
+    });
+    
+    // Navigate to checkout
+    router.push('/checkout');
   };
 
   const handleToggleFavorite = (product: DetailedProduct) => {
@@ -204,13 +231,13 @@ const SingleProductPage = () => {
         {/* Product Details */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 p-4 sm:p-4 md:p-6 mb-6 md:mb-16">
           {/* Product Image */}
-          <div className="bg-[#FFF9ED] w-full flex items-center justify-center aspect-square max-h-[730px] sm:max-w-[400px] md:max-w-full lg:max-w-[450px] xl:max-w-[600px] mx-auto">
+          <div className="bg-[#FFF9ED] w-full flex items-center justify-center aspect-square max-h-[730px] sm:max-w-[400px] md:max-w-full lg:max-w-[450px] xl:max-w-[600px] mx-auto overflow-hidden rounded-lg">
             <Image
               src={product.image}
               alt={product.name}
               width={600}
               height={600}
-              className="object-cover h-full w-full"
+              className="object-contain h-full w-full p-4"
             />
           </div>
 
@@ -281,7 +308,7 @@ const SingleProductPage = () => {
 
             {/* Price and Action Buttons */}
             <div className="border-0 w-full max-w-md flex flex-col gap-6">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
                   <p className="text-base sm:text-lg font-regular font-inter text-black">Price</p>
                   <span className="text-3xl sm:text-4xl font-regular font-inter text-black">
@@ -293,17 +320,27 @@ const SingleProductPage = () => {
                     </span>
                   )}
                 </div>
-                <Button
-                  onClick={() => handleAddToCart(product)}
-                  className="bg-[#FBC332] w-full sm:w-auto h-12 hover:bg-white text-black px-6 py-3 md:px-8 font-inter md:py-2 text-base md:text-lg font-semibold rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105"
-                >
-                  Add to Cart
-                </Button>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4">
+                
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={() => handleAddToCart(product)}
+                    className="bg-[#FBC332] flex-1 h-12 hover:bg-[#E6B02A] text-black px-6 py-3 font-inter text-base font-semibold rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105"
+                  >
+                    Add to Cart
+                  </Button>
+                  <Button
+                    onClick={() => handleBuyNow(product)}
+                    className="bg-black flex-1 h-12 hover:bg-gray-800 text-white px-6 py-3 font-inter text-base font-semibold rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105"
+                  >
+                    Buy Now
+                  </Button>
+                </div>
+                
+                {/* Favorites Button */}
                 <button 
                   onClick={() => product && handleToggleFavorite(product)}
-                  className={`border w-full sm:w-1/2 h-full px-6 py-3 rounded-full flex items-center justify-center gap-2 transition-all duration-200 ${
+                  className={`border w-full h-12 px-6 py-3 rounded-full flex items-center justify-center gap-2 transition-all duration-200 ${
                     product && isFavorite(product.id)
                       ? 'border-red-300 bg-red-50 text-red-600 hover:bg-red-100'
                       : 'border-gray-300 hover:bg-gray-50'
@@ -315,12 +352,6 @@ const SingleProductPage = () => {
                     }`} 
                   />
                   {product && isFavorite(product.id) ? 'Favorited' : 'Add to Favorites'}
-                </button>
-                <button className="border w-1/2 h-full border-gray-300 px-6 py-3 rounded-full flex items-center justify-center gap-2 hover:bg-gray-50">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                  </svg>
-                  Share
                 </button>
               </div>
             </div>

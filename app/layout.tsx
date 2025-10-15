@@ -4,6 +4,7 @@ import "@/styles/globals.css";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { CartProvider } from "@/contexts/CartContext";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,7 @@ export default function RootLayout({
         <CartProvider>
           <FavoritesProvider>
             <ConditionalLayout>{children}</ConditionalLayout>
+            <Toaster />
           </FavoritesProvider>
         </CartProvider>
       </body>

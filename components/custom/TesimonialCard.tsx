@@ -41,11 +41,13 @@ export default function TestimonialCard({
           <h4 className="text-black gap-4 flex uppercase font-inter text-lg sm:text-xl font-bold">{name}</h4>
           <p className="text-[#8F8E8E] text-xs sm:text-sm">{role}</p>
           <span className="flex gap-1">
-            <Image src="/svg/Star.svg" alt="star" width={15} height={15} />
-            <Image src="/svg/Star.svg" alt="star" width={15} height={15} />
-            <Image src="/svg/Star.svg" alt="star" width={15} height={15} />
-            <Image src="/svg/Star.svg" alt="star" width={15} height={15} />
-            <Image src="/svg/Star.svg" alt="star" width={15} height={15} />
+            {Array.from({ length: 5 }, (_, index) => (
+              <Star 
+                key={index}
+                size={15}
+                className={index < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}
+              />
+            ))}
           </span>
         </div>
       </div>

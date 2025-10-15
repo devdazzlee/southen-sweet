@@ -3,9 +3,11 @@
 import Image from "next/image";
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { useState } from "react";
 import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 interface Product {
   id: string | number;
@@ -28,6 +30,8 @@ interface ProductCardProps {
 const ProductCard = ({ product, onAddToCart, className }: ProductCardProps) => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { addToCart } = useCart();
+  const { toast } = useToast();
+  const router = useRouter();
 
   // Handle both API format (price) and legacy format (currentPrice)
   const productPrice = product.price || product.currentPrice || 0;
@@ -38,21 +42,44 @@ const ProductCard = ({ product, onAddToCart, className }: ProductCardProps) => {
     
     // Add to cart using the context
     addToCart({
-      id: product.id,
+      id: Number(product.id),
       name: product.name,
       description: product.description,
       currentPrice: productPrice,
-      price: productPrice,
       originalPrice: product.originalPrice,
       discount: product.discount,
-      image: product.image,
-      backgroundColor: product.backgroundColor
+      image: product.image
+    });
+    
+    // Show toast notification
+    toast({
+      title: "Added to Cart!",
+      description: `${product.name} has been added to your cart.`,
     });
     
     // Call the optional callback if provided
     if (onAddToCart) {
       onAddToCart(product);
     }
+  };
+
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Add to cart first
+    addToCart({
+      id: Number(product.id),
+      name: product.name,
+      description: product.description,
+      currentPrice: productPrice,
+      originalPrice: product.originalPrice,
+      discount: product.discount,
+      image: product.image
+    });
+    
+    // Navigate to checkout
+    router.push('/checkout');
   };
 
   const handleReadMore = (e: React.MouseEvent) => {
@@ -117,10 +144,10 @@ const ProductCard = ({ product, onAddToCart, className }: ProductCardProps) => {
             )}
           </div>
 
-          {/* Price and Add to Cart */}
-          <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
+          {/* Price and Action Buttons */}
+          <div className="mt-auto pt-2 border-t border-gray-100">
             {/* Price Section */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-3">
               <span className="text-orange-500 text-xl font-bold">
                 ${Number(productPrice).toFixed(2)}
               </span>
@@ -131,14 +158,24 @@ const ProductCard = ({ product, onAddToCart, className }: ProductCardProps) => {
               )}
             </div>
 
-            {/* Add to Cart Button */}
-            <button 
-              onClick={handleAddToCart} 
-              className="p-2  transition-all duration-200 hover:scale-110 "
-              aria-label={`Add ${product.name} to cart`}
-            >
-              <ShoppingCart className="w-8 h-8" />
-            </button>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <button 
+                onClick={handleAddToCart} 
+                className="flex-1 bg-orange-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors duration-200 flex items-center justify-center gap-1"
+                aria-label={`Add ${product.name} to cart`}
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Add to Cart
+              </button>
+              <button 
+                onClick={handleBuyNow} 
+                className="flex-1 bg-black text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors duration-200"
+                aria-label={`Buy ${product.name} now`}
+              >
+                Buy Now
+              </button>
+            </div>
           </div>
         </div>
       </Card>

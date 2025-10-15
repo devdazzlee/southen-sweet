@@ -11,7 +11,6 @@ import {
   Truck,
   ExternalLink,
   Calendar,
-  DollarSign,
   Phone,
   Mail
 } from 'lucide-react';
