@@ -12,7 +12,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="h-full w-full min-h-screen relative overflow-hidden flex items-center  bg-cover bg-center bg-no-repeat bg-[url('/images/hero.png')]">
+    <section className="h-full w-full min-h-screen relative overflow-hidden flex items-center bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/images/hero.png)' }}>
       {/* Background Overlay */}
       <div className=" absolute h-full w-full bg-black/40" />
 
@@ -25,7 +25,7 @@ export default function Hero() {
           </h1>
 
           <p className="text-xl sm:text-sm font-inter md:text-xl lg:text-2xl xl:text-2xl leading-9 font-medium md:mb-8 text-white uppercase max-w-4xl">
-            Indulge in mouthwatering candies crafted in Spain, bursting with flavor and quality ingredients. Perfectly sweet or sour – there's a treat for everyone!
+            Indulge in mouthwatering candies crafted in Spain, bursting with flavor and quality ingredients. Perfectly sweet or sour – there&apos;s a treat for everyone!
           </p>
 
           {/* Buttons */}

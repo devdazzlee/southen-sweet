@@ -5,6 +5,8 @@ export const siteData = {
     links: [
       { name: "Home", href: "/home" },
       { name: "Order Online", href: "/product" },
+      { name: "Wholesale", href: "/wholesale" },
+      { name: "Fundraising", href: "/fundraising" },
       { name: "About", href: "/about" },
       { name: "Contact", href: "/contact" }
     ],

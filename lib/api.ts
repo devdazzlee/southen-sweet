@@ -425,7 +425,31 @@ export const adminApi = {
   }
 };
 
-// ==================== AUTH ====================
+// ==================== WHOLESALE ====================
+export const wholesaleApi = {
+  submitInquiry: async (data: {
+    FirstName: string;
+    LastName: string;
+    email: string;
+    phone: string;
+    message: string;
+  }) => {
+    const response = await axios.post('/wholesale/inquiry', data);
+    return response.data;
+  },
+  
+  getInquiries: async (params?: { page?: number; limit?: number; status?: string }) => {
+    const response = await axios.get('/wholesale/inquiries', { params });
+    return response.data;
+  },
+  
+  updateInquiryStatus: async (id: string, status: string) => {
+    const response = await axios.put(`/wholesale/inquiries/${id}`, { status });
+    return response.data;
+  }
+};
+
+
 export const authApi = {
   register: async (data: {
     email: string;
@@ -468,7 +492,8 @@ export default {
   inventory: inventoryApi,
   returns: returnsApi,
   admin: adminApi,
-  auth: authApi
+  auth: authApi,
+  wholesale: wholesaleApi
 };
 
 

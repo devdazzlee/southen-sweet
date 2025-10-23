@@ -13,7 +13,7 @@ const AboutPage = () => {
   };
 
   return (
-    <section className="h-full w-full min-h-screen relative overflow-hidden flex items-center  bg-cover bg-center bg-no-repeat bg-[url('/images/hero.png')]">
+    <section className="h-full w-full min-h-screen relative overflow-hidden flex items-center bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/images/hero.png)' }}>
     {/* Background Overlay */}
     <div className=" absolute h-full w-full bg-black/40" />
 
