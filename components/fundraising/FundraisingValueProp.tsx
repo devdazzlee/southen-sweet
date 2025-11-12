@@ -51,9 +51,14 @@ export default function FundraisingValueProp() {
           </div>
 
           <div className="text-center">
-            <button className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors">
+            <a 
+              href="https://licoriceaffiliate.licorice4good.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-block bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
+            >
               Get Started Now
-            </button>
+            </a>
           </div>
         </div>
       </div>
