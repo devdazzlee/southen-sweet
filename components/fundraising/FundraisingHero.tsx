@@ -30,6 +30,17 @@ export default function FundraisingHero() {
               <span>Build Community</span>
             </div>
           </div>
+          <div className="text-center mt-10">
+            <a
+              // href="https://licoriceaffiliate.licorice4good.com/"
+              href="https://lp.constantcontactpages.com/sl/kaaCahu/fundraise"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
+            >
+              Get Started Now
+            </a>
+          </div>
         </div>
       </div>
     </div>

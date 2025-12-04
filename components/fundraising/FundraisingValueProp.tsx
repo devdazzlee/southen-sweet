@@ -1,4 +1,4 @@
-import { Target, Percent, Gift } from 'lucide-react';
+import { Target, Percent, Gift } from "lucide-react";
 
 export default function FundraisingValueProp() {
   return (
@@ -10,9 +10,10 @@ export default function FundraisingValueProp() {
               Your dedication and drive. Our rope candy.
             </h2>
             <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-              Raise funds with our Virtual Store Technology—the easiest way to fundraise for teams, 
-              school groups and other causes that benefit America&apos;s youth. Sell small batch, premium 
-              candy and keep 50% of every dollar you sell, with no minimums or fees.
+              Raise funds with our Virtual Store Technology—the easiest way to
+              fundraise for teams, school groups and other causes that benefit
+              America&apos;s youth. Sell small batch, premium candy and keep 50%
+              of every dollar you sell, with no minimums or fees.
             </p>
           </div>
 
@@ -32,10 +33,12 @@ export default function FundraisingValueProp() {
                 <Percent className="w-8 h-8 text-orange-600" />
               </div>
               <h3 className="text-2xl font-bold text-orange-600 mb-2">50%</h3>
-              <h4 className="text-lg font-semibold mb-3">of every dollar you sell supports your cause</h4>
+              <h4 className="text-lg font-semibold mb-3">
+                of every dollar you sell supports your cause
+              </h4>
               <p className="text-gray-600">
-                You keep half of what you sell through our website, so you reach your goal faster. 
-                And there are no set-up fees or handling fees.
+                You keep half of what you sell through our website, so you reach
+                your goal faster. And there are no set-up fees or handling fees.
               </p>
             </div>
 
@@ -51,9 +54,10 @@ export default function FundraisingValueProp() {
           </div>
 
           <div className="text-center">
-            <a 
-              href="https://licoriceaffiliate.licorice4good.com/" 
-              target="_blank" 
+            <a
+              // href="https://licoriceaffiliate.licorice4good.com/"
+              href="https://lp.constantcontactpages.com/sl/kaaCahu/fundraise"
+              target="_blank"
               rel="noopener noreferrer"
               className="inline-block bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors"
             >
@@ -65,4 +69,3 @@ export default function FundraisingValueProp() {
     </div>
   );
 }
-  
