@@ -2,35 +2,47 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has type errors.
     ignoreBuildErrors: true,
   },
+
   async redirects() {
+    if (process.env.NODE_ENV !== "production") {
+      return [];
+    }
+
     return [
       {
-        source: '/:path*',
-        destination: 'https://licorice4good.com/shop',
+        source: "/:path*",
+        destination: "https://licorice4good.com/shop",
         permanent: true,
-      }
-    ]
+      },
+    ];
   },
 
-  webpack(config) {
+  webpack: (config) => {
     config.module.rules.push({
       test: /\.svg$/,
-      use: ['@svgr/webpack']
+      issuer: /\.[jt]sx?$/,
+      use: ["@svgr/webpack"],
     });
     return config;
   },
+
   images: {
-    domains: ['images.unsplash.com', 'example.com', 'localhost', 'res.cloudinary.com'],
-    formats: ['image/webp', 'image/avif'],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
+    ],
+    formats: ["image/webp", "image/avif"],
   },
 };
 
