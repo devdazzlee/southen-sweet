@@ -11,7 +11,6 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
-
   async redirects() {
     return [
       {
