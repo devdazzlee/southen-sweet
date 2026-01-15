@@ -11,6 +11,17 @@ const nextConfig: NextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
+
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        destination: 'https://licorice4good.com/shop',
+        permanent: true,
+      }
+    ]
+  },
+
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
