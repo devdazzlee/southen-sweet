@@ -8,19 +8,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
 
-  async redirects() {
-    if (process.env.NODE_ENV !== "production") {
-      return [];
-    }
-
-    return [
-      {
-        source: "/:path*",
-        destination: "https://licorice4good.com/shop",
-        permanent: true,
-      },
-    ];
-  },
 
   webpack: (config) => {
     config.module.rules.push({
